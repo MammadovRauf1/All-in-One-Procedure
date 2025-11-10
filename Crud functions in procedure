@@ -1,0 +1,53 @@
+-- Create table 'tapsiriq' with auto-incrementing ID and two text columns A and B
+CREATE TABLE tapsiriq (
+    id INT NOT NULL IDENTITY(1,1),
+    A NVARCHAR(100),
+    B NVARCHAR(100)
+);
+GO
+
+-- Create a stored procedure that performs Insert, Update, or Delete depending on the input
+ALTER PROC tapsiriq_proc
+    @p_id INT,
+    @p_A NVARCHAR(100) = NULL,
+    @p_B NVARCHAR(100) = NULL,
+    @output INT OUTPUT
+AS
+BEGIN
+    -- If a record with this ID exists
+    IF EXISTS (SELECT 1 FROM tapsiriq WHERE id = @p_id)
+    BEGIN
+        -- If both parameters are NULL → delete the record
+        IF (@p_A IS NULL AND @p_B IS NULL)
+        BEGIN
+            DELETE FROM tapsiriq WHERE id = @p_id;
+            SET @output = @p_id; -- Return deleted ID
+        END
+        ELSE
+        BEGIN
+            -- Otherwise, update the existing record
+            UPDATE tapsiriq
+            SET 
+                A = ISNULL(@p_A, A),
+                B = ISNULL(@p_B, B)
+            WHERE id = @p_id;
+
+            SET @output = @p_id; -- Return updated ID
+        END
+    END
+    ELSE
+    BEGIN
+        -- If record does not exist → insert a new one
+        INSERT INTO tapsiriq (A, B)
+        VALUES (@p_A, @p_B);
+
+        SET @output = SCOPE_IDENTITY(); -- Return new ID
+    END
+END
+GO
+
+-- Example execution: Insert or update record
+EXEC dbo.tapsiriq_proc 10, 'salam', 'hello', NULL;
+
+-- Check results
+SELECT * FROM tapsiriq;
